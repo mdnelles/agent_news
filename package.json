@@ -15,15 +15,15 @@
     "agent": "tsx agent/index.ts"
   },
   "dependencies": {
-    "next": "16.2.6",
-    "react": "19.2.4",
-    "react-dom": "19.2.4",
     "@anthropic-ai/sdk": "^0.39.0",
     "@prisma/client": "^5.22.0",
     "dotenv": "^16.4.7",
     "googleapis": "^144.0.0",
     "jose": "^5.9.6",
+    "next": "16.2.6",
     "node-cron": "^3.0.3",
+    "react": "19.2.4",
+    "react-dom": "19.2.4",
     "rss-parser": "^3.13.0",
     "tsx": "^4.19.2"
   },
@@ -33,6 +33,7 @@
     "@testing-library/react": "^16.3.0",
     "@testing-library/user-event": "^14.6.1",
     "@types/node": "^20",
+    "@types/node-cron": "^3.0.11",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "@vitejs/plugin-react": "^4.5.2",
