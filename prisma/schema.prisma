@@ -1,0 +1,33 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Topic {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  slug        String   @unique
+  sheetTabId  String?  // Google Sheets gid for this tab
+  rssFeeds    String   // JSON array of RSS feed URLs
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  headlines   Headline[]
+}
+
+model Headline {
+  id          String   @id @default(cuid())
+  topicId     String
+  title       String
+  url         String
+  source      String
+  publishedAt DateTime?
+  fetchedAt   DateTime @default(now())
+  topic       Topic    @relation(fields: [topicId], references: [id], onDelete: Cascade)
+
+  @@unique([topicId, url])
+  @@index([topicId, fetchedAt(sort: Desc)])
+}
