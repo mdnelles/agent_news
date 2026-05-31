@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import { getSession } from '@/lib/auth'
+import { getSheetTabUrl } from '@/lib/sheet-url'
 
 export async function GET() {
   const session = await getSession()
@@ -10,7 +11,13 @@ export async function GET() {
     orderBy: { createdAt: 'asc' },
     include: { _count: { select: { headlines: true } } },
   })
-  return NextResponse.json(topics)
+
+  return NextResponse.json(
+    topics.map((topic) => ({
+      ...topic,
+      sheetUrl: getSheetTabUrl(topic.sheetTabId),
+    }))
+  )
 }
 
 export async function POST(request: NextRequest) {

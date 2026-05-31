@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { Nav } from '@/components/nav'
+import { SheetLink } from '@/components/sheet-link'
 
 interface Topic {
   id: string
@@ -9,6 +10,7 @@ interface Topic {
   slug: string
   rssFeeds: string
   sheetTabId: string | null
+  sheetUrl: string | null
   createdAt: string
   _count: { headlines: number }
 }
@@ -140,14 +142,14 @@ export default function TopicsPage() {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-3 mb-1">
                         <h2 className="text-lg font-semibold truncate">{topic.name}</h2>
-                        <span className="text-xs bg-gray-800 text-gray-400 px-2 py-0.5 rounded-full shrink-0">
-                          {topic._count.headlines} headlines
-                        </span>
-                        {topic.sheetTabId && (
-                          <span className="text-xs bg-green-900/40 text-green-400 border border-green-800 px-2 py-0.5 rounded-full shrink-0">
-                            Sheet synced
+                        <div className="flex flex-col items-start shrink-0">
+                          <span className="text-xs bg-gray-800 text-gray-400 px-2 py-0.5 rounded-full">
+                            {topic._count.headlines} headlines
                           </span>
-                        )}
+                          {topic.sheetUrl && (
+                            <SheetLink url={topic.sheetUrl} className="mt-1 px-0.5" showLabel />
+                          )}
+                        </div>
                       </div>
                       {feeds.length > 0 ? (
                         <p className="text-xs text-gray-500 truncate">

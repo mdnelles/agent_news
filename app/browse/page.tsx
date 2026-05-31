@@ -3,10 +3,12 @@
 import { useState, useEffect, useCallback, Suspense } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { Nav } from '@/components/nav'
+import { SheetLink } from '@/components/sheet-link'
 
 interface Topic {
   id: string
   name: string
+  sheetUrl: string | null
   _count: { headlines: number }
 }
 
@@ -102,6 +104,15 @@ function BrowseContent() {
               <div className={`text-xs mt-0.5 ${activeTopicId === topic.id ? 'text-blue-200' : 'text-gray-600'}`}>
                 {topic._count.headlines} headlines
               </div>
+              {topic.sheetUrl && (
+                <span className="mt-1 block" onClick={(e) => e.stopPropagation()}>
+                  <SheetLink
+                    url={topic.sheetUrl}
+                    className={activeTopicId === topic.id ? 'text-green-300 hover:text-green-200' : ''}
+                    showLabel
+                  />
+                </span>
+              )}
             </button>
           ))}
         </aside>

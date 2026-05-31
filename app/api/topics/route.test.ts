@@ -39,7 +39,7 @@ describe('GET /api/topics', () => {
   it('returns topics for authenticated users', async () => {
     mockGetSession.mockResolvedValue({ user: 'admin' })
     mockFindMany.mockResolvedValue([
-      { id: '1', name: 'AI', slug: 'ai', _count: { headlines: 3 } },
+      { id: '1', name: 'AI', slug: 'ai', sheetTabId: '123', _count: { headlines: 3 } },
     ])
 
     const response = await GET()
@@ -47,6 +47,7 @@ describe('GET /api/topics', () => {
 
     expect(response.status).toBe(200)
     expect(body).toHaveLength(1)
+    expect(body[0].sheetUrl).toBeNull()
     expect(mockFindMany).toHaveBeenCalledWith({
       orderBy: { createdAt: 'asc' },
       include: { _count: { select: { headlines: true } } },
