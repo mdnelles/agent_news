@@ -1,0 +1,76 @@
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+env:
+  APP_DIR: /var/www/agent-news.mikenelles.com/app
+  APP_PORT: 3034
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Generate Prisma client
+        run: pnpm exec prisma generate
+
+      - name: Run tests
+        run: pnpm test
+
+  deploy:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy to server
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          port: ${{ secrets.DEPLOY_SSH_PORT || 22 }}
+          script_stop: true
+          script: |
+            set -euo pipefail
+
+            APP_DIR="${{ env.APP_DIR }}"
+            APP_PORT="${{ env.APP_PORT }}"
+
+            cd "$APP_DIR"
+
+            echo "→ Pulling latest code"
+            git pull origin main
+
+            echo "→ Installing dependencies"
+            corepack enable 2>/dev/null || true
+            pnpm install --frozen-lockfile
+
+            echo "→ Generating Prisma client"
+            pnpm exec prisma generate
+
+            echo "→ Applying database schema"
+            pnpm run db:push
+
+            echo "→ Building Next.js app"
+            pnpm run build
+
+            echo "→ Restarting PM2 processes"
+            pm2 startOrReload ecosystem.config.cjs
+            pm2 save
+
+            echo "✓ Deploy complete — http://localhost:${APP_PORT}"

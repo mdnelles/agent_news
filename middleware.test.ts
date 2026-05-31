@@ -16,7 +16,7 @@ const { middleware } = await import('./middleware')
 
 function makeRequest(path: string, cookie?: string) {
   return new NextRequest(`http://localhost:3000${path}`, {
-    headers: cookie ? { cookie: `agent_news_session=${cookie}` } : {},
+    headers: cookie ? { cookie: `agent-newss_session=${cookie}` } : {},
   })
 }
 

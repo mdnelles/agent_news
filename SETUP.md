@@ -23,7 +23,7 @@ Edit `.env` and fill in:
 npm run db:push
 ```
 
-This creates `data/agent_news.db` (SQLite).
+This creates `data/agent-newss.db` (SQLite).
 
 ## 4. Google Sheets setup (optional but recommended)
 
@@ -106,7 +106,7 @@ crontab -e
 ```
 Add this line (adjust path to your project):
 ```
-0 * * * * cd /path/to/agent_news && npx tsx agent/index.ts >> /var/log/agent_news.log 2>&1
+0 * * * * cd /var/www/agent-news.mikenelles.com/app && npx tsx agent/index.ts >> /var/log/agent-news.log 2>&1
 ```
 
 ## 8. Production deployment (VPS)
@@ -118,11 +118,11 @@ npm run build
 # Start with PM2
 npm install -g pm2
 
-# Start the web server
-pm2 start npm --name "agent-news-web" -- start
+# Start the web server (port 3034)
+PORT=3034 pm2 start npm --name "agent-news-web" -- start
 
 # Start the agent on a schedule
-pm2 start "npx tsx agent/index.ts --schedule" --name "agent-news-agent" --cwd /path/to/agent_news
+pm2 start "npx tsx agent/index.ts --schedule" --name "agent-news-agent" --cwd /var/www/agent-news.mikenelles.com/app
 
 pm2 save
 pm2 startup

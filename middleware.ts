@@ -10,7 +10,7 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next()
   }
 
-  const token = request.cookies.get('agent_news_session')?.value
+  const token = request.cookies.get('agent-newss_session')?.value
 
   if (!token) {
     return NextResponse.redirect(new URL('/login', request.url))

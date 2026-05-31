@@ -44,7 +44,7 @@ Open `.env` and fill in:
 | `ADMIN_USERNAME` | Dashboard login username |
 | `ADMIN_PASSWORD` | Dashboard login password |
 | `JWT_SECRET` | Run `openssl rand -hex 32` and paste the result |
-| `DATABASE_URL` | Leave as `file:./data/agent_news.db` |
+| `DATABASE_URL` | Leave as `file:./data/agent-newss.db` |
 | `ANTHROPIC_API_KEY` | From https://console.anthropic.com |
 | `GOOGLE_SPREADSHEET_ID` | From your Google Sheet URL (see below) |
 | `GOOGLE_SERVICE_ACCOUNT_JSON` | Contents of your service account key JSON |
@@ -114,7 +114,7 @@ The agent will create one tab per topic automatically.
 ## Project structure
 
 ```
-agent_news/
+agent-newss/
 ├── agent/
 │   ├── index.ts          # Main agent — orchestrates fetch, store, sync
 │   ├── claude-feeds.ts   # Asks Claude to select RSS feeds per topic
@@ -184,26 +184,145 @@ npm run test:watch
 
 ## Production deployment (VPS)
 
+Full server setup for **agent-news.mikenelles.com** — app on port **3034**, Apache reverse proxy, Let's Encrypt SSL, and GitHub Actions deploy.
+
+### Paths and names
+
+| Item | Value |
+|------|--------|
+| Domain | `agent-news.mikenelles.com` |
+| App directory | `/var/www/agent-news.mikenelles.com/app` |
+| Apache config | `/etc/apache2/sites-available/agent-news.conf` |
+| App port (internal) | `3034` |
+| PM2 web process | `agent-news-web` |
+| PM2 agent process | `agent-news-agent` |
+
+---
+
+### 1. DNS
+
+Add an **A record**:
+
+| Type | Name | Value |
+|------|------|--------|
+| A | `agent-news` | your server IP |
+
+Verify: `dig +short agent-news.mikenelles.com`
+
+> Use a **hyphen**, not an underscore — Let's Encrypt will not issue certs for underscores.
+
+---
+
+### 2. One-time server setup
+
 ```bash
-# Build
-npm run build
+# App directory
+sudo mkdir -p /var/www/agent-news.mikenelles.com
+sudo git clone <your-repo-url> /var/www/agent-news.mikenelles.com/app
+cd /var/www/agent-news.mikenelles.com/app
 
-# Install PM2
-npm install -g pm2
+# Environment (edit with production values)
+cp .env.example .env
+nano .env
 
-# Start web server
-pm2 start npm --name "agent-news-web" -- start
+# Install Node 20 + pnpm, then build
+corepack enable
+pnpm install --frozen-lockfile
+pnpm exec prisma generate
+pnpm run db:push
+pnpm run build
 
-# Start agent (runs every hour internally)
-pm2 start "npx tsx agent/index.ts --schedule" \
-  --name "agent-news-agent" \
-  --cwd /path/to/agent_news
-
+# PM2 — web on port 3034
+pm2 start ecosystem.config.cjs
 pm2 save && pm2 startup
 ```
 
-Or use a system cron instead of `--schedule`:
+Verify the app responds locally:
 
+```bash
+curl -I http://127.0.0.1:3034
+pm2 ls    # both agent-news-web and agent-news-agent should be online
 ```
-0 * * * * cd /path/to/agent_news && npx tsx agent/index.ts >> /var/log/agent_news.log 2>&1
+
+---
+
+### 3. Apache reverse proxy
+
+```bash
+sudo apt install -y apache2 certbot python3-certbot-apache
+sudo a2enmod proxy proxy_http ssl headers rewrite
+```
+
+Copy the vhost from this repo (or create manually):
+
+```bash
+sudo cp /var/www/agent-news.mikenelles.com/app/deploy/agent-news.conf \
+  /etc/apache2/sites-available/agent-news.conf
+
+sudo a2ensite agent-news.conf
+sudo apache2ctl configtest
+sudo systemctl reload apache2
+```
+
+Confirm Apache sees the vhost:
+
+```bash
+sudo apache2ctl -S | grep agent-news
+curl -I http://agent-news.mikenelles.com
+```
+
+---
+
+### 4. SSL certificate
+
+```bash
+sudo certbot --apache -d agent-news.mikenelles.com
+```
+
+Choose **redirect HTTP → HTTPS** when prompted.
+
+Test renewal: `sudo certbot renew --dry-run`
+
+---
+
+### 5. GitHub Actions deploy
+
+Add repository secrets (**Settings → Secrets → Actions**):
+
+| Secret | Description |
+|--------|-------------|
+| `DEPLOY_HOST` | Server IP or hostname |
+| `DEPLOY_USER` | SSH user |
+| `DEPLOY_SSH_KEY` | Private SSH key |
+
+On push to `main`, `.github/workflows/deploy.yml` will test, pull, build, and restart PM2 on the server.
+
+---
+
+### 6. Firewall
+
+```bash
+sudo ufw allow OpenSSH
+sudo ufw allow 'Apache Full'
+sudo ufw enable
+```
+
+Port **3034** does not need to be public — only Apache (80/443) does.
+
+---
+
+### Troubleshooting
+
+| Symptom | Likely cause | Fix |
+|---------|--------------|-----|
+| **503 Service Unavailable** | `agent-news-web` not running | `PORT=3034 pm2 start npm --name agent-news-web -- start` |
+| Certbot can't find vhost | Site not enabled | `sudo a2ensite agent-news.conf && sudo systemctl reload apache2` |
+| Invalid character in domain | Underscore in hostname | Use `agent-news`, never `agent_news` |
+| Agent restarting constantly | Missing `.env` or DB | Check `pm2 logs agent-news-agent` |
+
+```bash
+pm2 logs agent-news-web --lines 30
+pm2 logs agent-news-agent --lines 30
+curl -I http://127.0.0.1:3034
+sudo tail /var/log/apache2/agent-news-error.log
 ```

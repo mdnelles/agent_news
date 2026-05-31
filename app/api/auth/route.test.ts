@@ -6,7 +6,7 @@ const mockSignToken = vi.fn()
 
 vi.mock('@/lib/auth', () => ({
   signToken: (...args: unknown[]) => mockSignToken(...args),
-  COOKIE_NAME: 'agent_news_session',
+  COOKIE_NAME: 'agent-newss_session',
 }))
 
 const { POST, DELETE } = await import('./route')

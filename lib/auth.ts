@@ -4,7 +4,7 @@ import { cookies } from 'next/headers'
 const SECRET = new TextEncoder().encode(
   process.env.JWT_SECRET || 'fallback-secret-change-in-production'
 )
-const COOKIE_NAME = 'agent_news_session'
+const COOKIE_NAME = 'agent-newss_session'
 
 export async function signToken(payload: { user: string }) {
   return new SignJWT(payload)
