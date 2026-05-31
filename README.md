@@ -153,6 +153,32 @@ agent_news/
 | `npm run agent` | Run the agent once (all topics) |
 | `npm run db:push` | Create/update the database schema |
 | `npm run db:generate` | Regenerate Prisma client |
+| `npm test` | Run the test suite once |
+| `npm run test:watch` | Run tests in watch mode |
+
+---
+
+## Testing
+
+Tests use [Vitest](https://vitest.dev/) and [Testing Library](https://testing-library.com/). No database, Google Sheets, or network access is required — external services are mocked.
+
+```bash
+npm test
+# or, to re-run on file changes:
+npm run test:watch
+```
+
+### What's covered
+
+| Area | File(s) |
+|---|---|
+| JWT auth | `lib/auth.test.ts` |
+| RSS fetching | `agent/rss-fetcher.test.ts` |
+| Claude feed selection | `agent/claude-feeds.test.ts` |
+| Google Sheets sync | `lib/google-sheets.test.ts` |
+| Auth middleware | `middleware.test.ts` |
+| API routes | `app/api/auth/route.test.ts`, `app/api/topics/route.test.ts`, `app/api/headlines/route.test.ts` |
+| Nav component | `components/nav.test.tsx` |
 
 ---
 
