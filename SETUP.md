@@ -23,7 +23,7 @@ Edit `.env` and fill in:
 npm run db:push
 ```
 
-This creates `data/agent-newss.db` (SQLite).
+This creates `data/agent_news.db` (SQLite).
 
 ## 4. Google Sheets setup (optional but recommended)
 
@@ -95,10 +95,12 @@ npm run agent
 npx tsx agent/index.ts --topicId=<topic-id-from-db>
 ```
 
-**Run on a schedule (every hour, stays running):**
+**Run on a schedule (twice daily at 08:00 and 20:00, stays running):**
 ```bash
 npx tsx agent/index.ts --schedule
 ```
+
+Set `AGENT_FETCH_CRON` in `.env` to customize (standard cron syntax, server local time).
 
 **Or use system cron (recommended for production):**
 ```bash

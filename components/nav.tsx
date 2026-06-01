@@ -2,10 +2,12 @@
 
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
+import { useSession } from '@/lib/use-session'
 
 export function Nav() {
   const pathname = usePathname()
   const router = useRouter()
+  const { session, isAdmin, isGuest } = useSession()
 
   async function logout() {
     await fetch('/api/auth', { method: 'DELETE' })
@@ -13,8 +15,9 @@ export function Nav() {
   }
 
   const links = [
-    { href: '/topics', label: 'Topics' },
+    ...(isAdmin ? [{ href: '/topics', label: 'Topics' }] : []),
     { href: '/browse', label: 'Browse' },
+    { href: '/about', label: 'About' },
   ]
 
   return (
@@ -38,12 +41,22 @@ export function Nav() {
             ))}
           </div>
         </div>
-        <button
-          onClick={logout}
-          className="text-sm text-gray-400 hover:text-white transition-colors"
-        >
-          Sign out
-        </button>
+        <div className="flex items-center gap-4">
+          {isGuest && (
+            <span className="text-xs bg-gray-800 text-gray-400 px-2 py-1 rounded-full">
+              Guest
+            </span>
+          )}
+          {session && isAdmin && (
+            <span className="text-xs text-gray-500 hidden sm:inline">{session.user}</span>
+          )}
+          <button
+            onClick={logout}
+            className="text-sm text-gray-400 hover:text-white transition-colors"
+          >
+            Sign out
+          </button>
+        </div>
       </div>
     </nav>
   )

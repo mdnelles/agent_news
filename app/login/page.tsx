@@ -8,6 +8,7 @@ export default function LoginPage() {
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const [guestLoading, setGuestLoading] = useState(false)
   const router = useRouter()
 
   async function handleSubmit(e: React.FormEvent) {
@@ -29,6 +30,27 @@ export default function LoginPage() {
       setError('Something went wrong')
     } finally {
       setLoading(false)
+    }
+  }
+
+  async function handleGuestLogin() {
+    setError('')
+    setGuestLoading(true)
+    try {
+      const res = await fetch('/api/auth', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ guest: true }),
+      })
+      if (!res.ok) {
+        setError('Could not start guest session')
+      } else {
+        router.push('/browse')
+      }
+    } catch {
+      setError('Something went wrong')
+    } finally {
+      setGuestLoading(false)
     }
   }
 
@@ -71,11 +93,30 @@ export default function LoginPage() {
           </div>
           <button
             type="submit"
-            disabled={loading}
+            disabled={loading || guestLoading}
             className="w-full bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white font-medium rounded-lg py-2 transition-colors"
           >
             {loading ? 'Signing in…' : 'Sign in'}
           </button>
+          <div className="relative py-2">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-gray-800" />
+            </div>
+            <div className="relative flex justify-center text-xs">
+              <span className="bg-gray-900 px-2 text-gray-500">or</span>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={handleGuestLogin}
+            disabled={loading || guestLoading}
+            className="w-full bg-gray-800 hover:bg-gray-700 disabled:opacity-50 text-gray-200 font-medium rounded-lg py-2 transition-colors border border-gray-700"
+          >
+            {guestLoading ? 'Continuing…' : 'Continue as guest'}
+          </button>
+          <p className="text-xs text-gray-500 text-center">
+            Guests can browse headlines but cannot add or manage topics.
+          </p>
         </form>
       </div>
     </div>

@@ -1,8 +1,10 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
+import { useRouter } from 'next/navigation'
 import { Nav } from '@/components/nav'
 import { SheetLink } from '@/components/sheet-link'
+import { ApiError, fetchJson } from '@/lib/fetch-json'
 
 interface Topic {
   id: string
@@ -16,6 +18,7 @@ interface Topic {
 }
 
 export default function TopicsPage() {
+  const router = useRouter()
   const [topics, setTopics] = useState<Topic[]>([])
   const [newTopicName, setNewTopicName] = useState('')
   const [loading, setLoading] = useState(true)
@@ -24,11 +27,22 @@ export default function TopicsPage() {
   const [error, setError] = useState('')
 
   const loadTopics = useCallback(async () => {
-    const res = await fetch('/api/topics')
-    const data = await res.json()
-    setTopics(data)
-    setLoading(false)
-  }, [])
+    setLoading(true)
+    setError('')
+    try {
+      const data = await fetchJson<Topic[]>('/api/topics')
+      setTopics(data)
+    } catch (err) {
+      if (err instanceof ApiError && err.status === 401) {
+        router.push('/login')
+        return
+      }
+      setError(err instanceof Error ? err.message : 'Failed to load topics')
+      setTopics([])
+    } finally {
+      setLoading(false)
+    }
+  }, [router])
 
   useEffect(() => { loadTopics() }, [loadTopics])
 

@@ -6,8 +6,17 @@ import { Nav } from './nav'
 const mockPush = vi.fn()
 
 vi.mock('next/navigation', () => ({
-  usePathname: () => '/topics',
+  usePathname: () => '/browse',
   useRouter: () => ({ push: mockPush }),
+}))
+
+vi.mock('@/lib/use-session', () => ({
+  useSession: () => ({
+    session: { user: 'admin', role: 'admin' },
+    loading: false,
+    isAdmin: true,
+    isGuest: false,
+  }),
 }))
 
 vi.mock('next/link', () => ({
@@ -46,6 +55,7 @@ describe('Nav', () => {
     expect(screen.getByText('AgentNews')).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'Topics' })).toHaveAttribute('href', '/topics')
     expect(screen.getByRole('link', { name: 'Browse' })).toHaveAttribute('href', '/browse')
+    expect(screen.getByRole('link', { name: 'About' })).toHaveAttribute('href', '/about')
   })
 
   it('signs out and redirects to login', async () => {

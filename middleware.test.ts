@@ -34,10 +34,13 @@ describe('middleware', () => {
   })
 
   it('redirects to login when no session cookie is present', async () => {
-    const response = await middleware(makeRequest('/topics'))
+    const pageResponse = await middleware(makeRequest('/topics'))
+    const apiResponse = await middleware(makeRequest('/api/topics'))
 
-    expect(response.status).toBe(307)
-    expect(response.headers.get('location')).toBe('http://localhost:3000/login')
+    expect(pageResponse.status).toBe(307)
+    expect(pageResponse.headers.get('location')).toBe('http://localhost:3000/login')
+    expect(apiResponse.status).toBe(401)
+    await expect(apiResponse.json()).resolves.toEqual({ error: 'Unauthorized' })
   })
 
   it('redirects to login when the token is invalid', async () => {
@@ -48,6 +51,15 @@ describe('middleware', () => {
     expect(response.status).toBe(307)
     expect(response.headers.get('location')).toBe('http://localhost:3000/login')
     expect(mockVerifyToken).toHaveBeenCalledWith('bad-token')
+  })
+
+  it('redirects guests away from topics management', async () => {
+    mockVerifyToken.mockResolvedValue({ user: 'guest', role: 'guest' })
+
+    const response = await middleware(makeRequest('/topics', 'guest-token'))
+
+    expect(response.status).toBe(307)
+    expect(response.headers.get('location')).toBe('http://localhost:3000/browse')
   })
 
   it('allows authenticated requests with a valid token', async () => {

@@ -2,13 +2,15 @@
 
 An AI-powered news aggregator that monitors RSS feeds by topic, stores headlines in a Google Sheet, and serves them through a password-protected dashboard.
 
+**Live instance:** [agent-news.mikenelles.com](https://agent-news.mikenelles.com/t)
+
 ---
 
 ## How it works
 
 1. You add topics (e.g. "Tech News", "Crypto", "War in the Gulf") via the dashboard
 2. Claude automatically selects the best RSS feeds for each topic
-3. An agent fetches headlines every hour, deduplicates them, and keeps the most recent 200
+3. An agent fetches headlines twice daily, deduplicates them, and keeps the most recent 200
 4. Headlines are written to Google Sheets (one tab per topic) and browseable in the dashboard
 
 ---
@@ -19,7 +21,7 @@ An AI-powered news aggregator that monitors RSS feeds by topic, stores headlines
 - **SQLite + Prisma** — local data store
 - **Google Sheets API** — spreadsheet sync
 - **Anthropic Claude** — selects RSS feeds per topic
-- **node-cron** — hourly scheduling
+- **node-cron** — twice-daily scheduling (08:00 and 20:00 server time)
 
 ---
 
@@ -44,7 +46,7 @@ Open `.env` and fill in:
 | `ADMIN_USERNAME` | Dashboard login username |
 | `ADMIN_PASSWORD` | Dashboard login password |
 | `JWT_SECRET` | Run `openssl rand -hex 32` and paste the result |
-| `DATABASE_URL` | Leave as `file:./data/agent-newss.db` |
+| `DATABASE_URL` | Leave as `file:./data/agent_news.db` |
 | `ANTHROPIC_API_KEY` | From https://console.anthropic.com |
 | `GOOGLE_SPREADSHEET_ID` | From your Google Sheet URL (see below) |
 | `GOOGLE_SERVICE_ACCOUNT_JSON` | Contents of your service account key JSON |
@@ -69,7 +71,7 @@ Visit http://localhost:3000, log in, and add your first topic.
 # Fetch all topics once
 npm run agent
 
-# Run on a schedule (every hour, stays running)
+# Run on a schedule (twice daily, stays running)
 npx tsx agent/index.ts --schedule
 ```
 
@@ -114,7 +116,7 @@ The agent will create one tab per topic automatically.
 ## Project structure
 
 ```
-agent-newss/
+agent_news/
 ├── agent/
 │   ├── index.ts          # Main agent — orchestrates fetch, store, sync
 │   ├── claude-feeds.ts   # Asks Claude to select RSS feeds per topic

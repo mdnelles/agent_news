@@ -23,6 +23,7 @@
 # misc
 .DS_Store
 *.pem
+.venv-favicons/
 
 # debug
 npm-debug.log*
@@ -43,6 +44,8 @@ next-env.d.ts
 # database
 /data/*.db
 /data/*.db-journal
+/prisma/data/*.db
+/prisma/data/*.db-journal
 
 # keep data directory
 !/data/.gitkeep

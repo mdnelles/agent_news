@@ -1,28 +1,35 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
-import { getSession } from '@/lib/auth'
+import { getSession, requireAdmin } from '@/lib/auth'
 import { getSheetTabUrl } from '@/lib/sheet-url'
 
 export async function GET() {
-  const session = await getSession()
-  if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  try {
+    const session = await getSession()
+    if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const topics = await prisma.topic.findMany({
-    orderBy: { createdAt: 'asc' },
-    include: { _count: { select: { headlines: true } } },
-  })
+    const topics = await prisma.topic.findMany({
+      orderBy: { createdAt: 'asc' },
+      include: { _count: { select: { headlines: true } } },
+    })
 
-  return NextResponse.json(
-    topics.map((topic) => ({
-      ...topic,
-      sheetUrl: getSheetTabUrl(topic.sheetTabId),
-    }))
-  )
+    return NextResponse.json(
+      topics.map((topic) => ({
+        ...topic,
+        sheetUrl: getSheetTabUrl(topic.sheetTabId),
+      }))
+    )
+  } catch (err) {
+    console.error('GET /api/topics failed:', err)
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+  }
 }
 
 export async function POST(request: NextRequest) {
-  const session = await getSession()
-  if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const auth = await requireAdmin()
+  if ('error' in auth) {
+    return NextResponse.json({ error: auth.error }, { status: auth.status })
+  }
 
   const { name } = await request.json()
   if (!name?.trim()) {

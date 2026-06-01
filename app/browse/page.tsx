@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, Suspense } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { Nav } from '@/components/nav'
 import { SheetLink } from '@/components/sheet-link'
+import { ApiError, fetchJson } from '@/lib/fetch-json'
 
 interface Topic {
   id: string
@@ -30,31 +31,59 @@ function BrowseContent() {
   const [page, setPage] = useState(1)
   const [search, setSearch] = useState('')
   const [loading, setLoading] = useState(false)
+  const [topicsLoading, setTopicsLoading] = useState(true)
+  const [loadError, setLoadError] = useState('')
   const [activeTopicId, setActiveTopicId] = useState<string>('')
 
   useEffect(() => {
-    fetch('/api/topics').then((r) => r.json()).then((data: Topic[]) => {
-      setTopics(data)
-      const fromUrl = searchParams.get('topic')
-      const initial = fromUrl || data[0]?.id || ''
-      setActiveTopicId(initial)
-    })
-  }, [searchParams])
+    setTopicsLoading(true)
+    setLoadError('')
+    fetchJson<Topic[]>('/api/topics')
+      .then((data) => {
+        setTopics(data)
+        const fromUrl = searchParams.get('topic')
+        const initial = fromUrl || data[0]?.id || ''
+        setActiveTopicId(initial)
+      })
+      .catch((err) => {
+        if (err instanceof ApiError && err.status === 401) {
+          router.push('/login')
+          return
+        }
+        setLoadError(err instanceof Error ? err.message : 'Failed to load topics')
+        setTopics([])
+      })
+      .finally(() => setTopicsLoading(false))
+  }, [searchParams, router])
 
   const loadHeadlines = useCallback(async () => {
     if (!activeTopicId) return
     setLoading(true)
+    setLoadError('')
     const params = new URLSearchParams({
       topicId: activeTopicId,
       page: String(page),
       ...(search && { search }),
     })
-    const res = await fetch(`/api/headlines?${params}`)
-    const data = await res.json()
-    setHeadlines(data.headlines || [])
-    setTotal(data.total || 0)
-    setLoading(false)
-  }, [activeTopicId, page, search])
+    try {
+      const data = await fetchJson<{
+        headlines: Headline[]
+        total: number
+      }>(`/api/headlines?${params}`)
+      setHeadlines(data.headlines || [])
+      setTotal(data.total || 0)
+    } catch (err) {
+      if (err instanceof ApiError && err.status === 401) {
+        router.push('/login')
+        return
+      }
+      setLoadError(err instanceof Error ? err.message : 'Failed to load headlines')
+      setHeadlines([])
+      setTotal(0)
+    } finally {
+      setLoading(false)
+    }
+  }, [activeTopicId, page, search, router])
 
   useEffect(() => { loadHeadlines() }, [loadHeadlines])
 
@@ -119,6 +148,11 @@ function BrowseContent() {
 
         {/* Main content */}
         <main className="flex-1 flex flex-col overflow-hidden">
+          {loadError && (
+            <div className="mx-6 mt-4 bg-red-900/40 border border-red-700 text-red-300 text-sm rounded-lg px-4 py-3">
+              {loadError}
+            </div>
+          )}
           {/* Search bar */}
           <div className="border-b border-gray-800 px-6 py-3">
             <input
@@ -137,7 +171,7 @@ function BrowseContent() {
 
           {/* Headlines */}
           <div className="flex-1 overflow-y-auto px-6 py-4">
-            {loading ? (
+            {topicsLoading || loading ? (
               <div className="text-gray-500 text-center py-16">Loading…</div>
             ) : headlines.length === 0 ? (
               <div className="text-gray-500 text-center py-16">

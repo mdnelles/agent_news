@@ -2,11 +2,13 @@ import { NextRequest } from 'next/server'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const mockGetSession = vi.fn()
+const mockRequireAdmin = vi.fn()
 const mockFindMany = vi.fn()
 const mockCreate = vi.fn()
 
 vi.mock('@/lib/auth', () => ({
   getSession: () => mockGetSession(),
+  requireAdmin: () => mockRequireAdmin(),
 }))
 
 vi.mock('@/lib/db', () => ({
@@ -57,12 +59,25 @@ describe('GET /api/topics', () => {
 
 describe('POST /api/topics', () => {
   beforeEach(() => {
-    mockGetSession.mockReset()
+    mockRequireAdmin.mockReset()
     mockCreate.mockReset()
-    mockGetSession.mockResolvedValue({ user: 'admin' })
+  })
+
+  it('returns 403 for guests', async () => {
+    mockRequireAdmin.mockResolvedValue({ error: 'Forbidden', status: 403 })
+
+    const request = new NextRequest('http://localhost:3000/api/topics', {
+      method: 'POST',
+      body: JSON.stringify({ name: 'AI' }),
+      headers: { 'Content-Type': 'application/json' },
+    })
+
+    const response = await POST(request)
+    expect(response.status).toBe(403)
   })
 
   it('returns 400 when name is missing', async () => {
+    mockRequireAdmin.mockResolvedValue({ session: { user: 'admin', role: 'admin' } })
     const request = new NextRequest('http://localhost:3000/api/topics', {
       method: 'POST',
       body: JSON.stringify({ name: '   ' }),
@@ -77,6 +92,7 @@ describe('POST /api/topics', () => {
   })
 
   it('creates a topic with a slugified name', async () => {
+    mockRequireAdmin.mockResolvedValue({ session: { user: 'admin', role: 'admin' } })
     mockCreate.mockResolvedValue({
       id: 'topic-1',
       name: 'Artificial Intelligence',
@@ -105,6 +121,7 @@ describe('POST /api/topics', () => {
   })
 
   it('returns 409 when the topic already exists', async () => {
+    mockRequireAdmin.mockResolvedValue({ session: { user: 'admin', role: 'admin' } })
     mockCreate.mockRejectedValue(new Error('Unique constraint'))
 
     const request = new NextRequest('http://localhost:3000/api/topics', {

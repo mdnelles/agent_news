@@ -4,7 +4,7 @@
  * Usage:
  *   npx tsx agent/index.ts                    # fetch all topics
  *   npx tsx agent/index.ts --topicId=<id>     # fetch a single topic
- *   npx tsx agent/index.ts --schedule         # run on cron (every hour)
+ *   npx tsx agent/index.ts --schedule         # run on cron (twice daily)
  */
 
 import 'dotenv/config'
@@ -17,6 +17,9 @@ import { ensureTopicSheet, syncTopicSheet } from '../lib/google-sheets'
 const prisma = new PrismaClient()
 
 const MAX_HEADLINES = 200
+
+// Twice daily at 08:00 and 20:00 (server local time). Override with AGENT_FETCH_CRON.
+const FETCH_CRON = process.env.AGENT_FETCH_CRON ?? '0 8,20 * * *'
 
 async function processTopic(topicId: string) {
   const topic = await prisma.topic.findUnique({ where: { id: topicId } })
@@ -140,11 +143,10 @@ async function main() {
   const scheduleMode = args.includes('--schedule')
 
   if (scheduleMode) {
-    console.log('⏰ Running in schedule mode — fetching every hour')
+    console.log(`⏰ Running in schedule mode — cron: ${FETCH_CRON}`)
     // Run immediately on start
     await (topicIdArg ? processTopic(topicIdArg) : processAll())
-    // Then every hour
-    cron.schedule('0 * * * *', () => {
+    cron.schedule(FETCH_CRON, () => {
       topicIdArg ? processTopic(topicIdArg) : processAll()
     })
   } else {
